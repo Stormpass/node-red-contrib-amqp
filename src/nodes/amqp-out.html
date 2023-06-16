@@ -1,0 +1,230 @@
+<script type="text/javascript">
+  RED.nodes.registerType('amqp-out', {
+    category: 'AMQP',
+    color: '#D1649C',
+    defaults: {
+      name: { value: '' },
+      broker: { value: '', type: 'amqp-broker' },
+      exchangeName: { value: '' },
+      exchangeType: { value: 'topic' },
+      exchangeRoutingKey: { value: '' },
+      exchangeRoutingKeyType: { value: 'str' },
+      exchangeDurable: { value: true },
+      amqpProperties: {
+        value: '{ "headers": {} }',
+      },
+      rpcTimeoutMilliseconds: { value: 3000 },
+      outputs: { value: 0 },
+    },
+    inputs: 1,
+    outputs: 0,
+    align: 'right',
+    icon: 'rabbitmq.svg',
+    label: function () {
+      if (this.name) {
+        return this.name
+      }
+      const name = this.exchangeName
+      const colon = name && this.exchangeRoutingKey ? ': ' : ''
+      const label = name + colon + this.exchangeRoutingKey
+      return label || 'amqp-out'
+    },
+    oneditprepare: function () {
+      $("#node-input-exchangeRoutingKey").typedInput({
+        default: "str",
+        types: ["str", "msg", "flow", "global", "jsonata"],
+        typeField: $("#node-input-exchangeRoutingKeyType")
+      })
+
+      $('#node-input-amqpProperties').typedInput({
+        type: 'json',
+        types: ['json'],
+      })
+
+      $('#node-input-rpcTimeoutMilliseconds').typedInput({
+        type: 'num',
+        types: ['num'],
+      })
+
+      $('#node-input-exchangeType').change(function (e) {
+        const exchangeType = this.value
+
+        // hide/show routing key field
+        if (['fanout', 'headers'].includes(exchangeType)) {
+          $('.routing-key-form-input').hide()
+        } else {
+          $('.routing-key-form-input').show()
+        }
+
+        // hide/show headers exchange help text
+        if (['headers'].includes(exchangeType)) {
+          $('.headers-form-input').show()
+        } else {
+          $('.headers-form-input').hide()
+        }
+      })
+    },
+  })
+
+  function truncate(str, length = 40, ending = '...') {
+    if (str.length > length) {
+      return str.substring(0, length - ending.length) + ending
+    }
+    return str
+  }
+</script>
+
+<style>
+  div.wide-label-amqp-out label {
+    width: 35% !important;
+  }
+  div.wide-label-amqp-out input.simple-input {
+    width: 64% !important;
+  }
+  div.wide-label-amqp-out div.red-ui-typedInput-container {
+    width: 64% !important
+  }
+  div.wider-label-amqp-out label {
+    width: 50% !important;
+  }
+  select.small-amqp-out {
+    width: 75px !important;
+  }
+  input.small-amqp-out {
+    width: 120px !important;
+  }
+  div.form-tips {
+    margin: 20px 0;
+  }
+</style>
+
+<script type="text/html" data-template-name="amqp-out">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i>&nbsp;&nbsp;名称</label>
+    <input type="text" id="node-input-name" placeholder="Leave blank to use exchange name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-broker"><i class="fa fa-globe"></i>&nbsp;&nbsp;Broker</label>
+    <input type="text" id="node-input-broker" placeholder="AMQP Broker">
+  </div>
+  <hr>
+  <h4>Exchange Info</h4>
+  <div class="form-row wide-label-amqp-out">
+    <label for="node-input-exchangeType"><i class="fa fa-filter"></i>&nbsp;&nbsp;Type</label>
+    <select id="node-input-exchangeType">
+      <option value="topic">Topic</option>
+      <option value="direct">Direct</option>
+      <option value="fanout">Fanout</option>
+      <option value="headers">Headers</option>
+    </select>
+  </div>
+  <div class="form-tips headers-form-input">
+    <i class="fa fa-info-circle"></i>
+    Add key/value pairs to a `headers` field in the AMQP Properties field below
+  </div>
+  <div class="form-row wide-label-amqp-out">
+    <label for="node-input-exchangeName"><i class="fa fa-tag"></i>&nbsp;&nbsp;Exchange Name</label>
+    <input type="text" class="simple-input" id="node-input-exchangeName" placeholder="Leave blank for the default exchange">
+  </div>
+  <div class="form-row wide-label-amqp-out routing-key-form-input">
+    <label for="node-input-exchangeRoutingKey"><i class="fa fa-filter"></i>&nbsp;&nbsp;Routing Key</label>
+    <input type="text" id="node-input-exchangeRoutingKey">
+    <input type="hidden" id="node-input-exchangeRoutingKeyType" />
+  </div>
+  <div class="form-tips routing-key-form-input">
+    <i class="fa fa-info-circle"></i>
+    You can specify multiple routing keys separated by commas
+  </div>
+  <div class="form-row">
+    <label>&nbsp;</label>
+    <input style="width:20px; vertical-align:baseline; margin-right:5px;" type="checkbox" id="node-input-exchangeDurable">
+    <label style="width:auto; margin-top:7px;" for="node-input-exchangeDurable">Durable</label>
+  </div>
+  <hr>
+  <h4>Message Info</h4>
+  <div class="form-row wide-label-amqp-out">
+    <label for="node-input-amqpProperties"><i class="fa fa-filter"></i>&nbsp;&nbsp;AMQP Properties</label>
+    <input type="text" id="node-input-amqpProperties">
+  </div>
+  <div class="form-tips">
+    <i class="fa fa-info-circle"></i>
+    Standard AMQP message properties as specified in <a href="https://www.squaremobius.net/amqp.node/channel_api.html#channel_publish" target="_blank">the amqplib docs</a>.
+  </div>
+  <span id="rpc-section">
+    <hr>
+    <h4>Remote Procedure Call</h4>
+    <div class="form-row wider-label-amqp-out">
+      <label for="node-input-outputs"><i class="fa fa-globe"></i>&nbsp;&nbsp;Request RPC response</label>
+      <select id="node-input-outputs" class="small-amqp-out">
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+      </select>
+    </div>
+    <div class="form-row wider-label-amqp-out">
+      <label for="node-input-rpcTimeoutMilliseconds"><i class="fa fa-clock-o"></i>&nbsp;&nbsp;RPC Timeout (ms)</label>
+      <input type="text" class="small-amqp-out" id="node-input-rpcTimeoutMilliseconds">
+    </div>
+    <div class="form-tips">
+      <i class="fa fa-info-circle"></i>
+      If set to yes, the amqp properties <em>correlationId</em> and <em>replyTo</em> will be auto-generated and sent along with the published message. The message consumer will need to send a response using those fields for this node to then consume and send to output. See the <a href="https://www.rabbitmq.com/tutorials/tutorial-six-javascript.html" target="_blank">RabbitMQ RPC Tutorial</a> for more info. If the consumer for whatever reason does not send a response the request will timeout (configurable here with a default of 3000ms) and the rpc consumer will be cancelled.
+      <br />
+      <br />
+      Note: You <em>can</em> override the <em>correlationId</em> and <em>replyTo</em> AMQP properties by specifying them above or sending them via the node input but it is not recommended except for special use cases.
+    </div>
+  </span>
+</script>
+
+<script type="text/html" data-help-name="amqp-out">
+  <p>Connects and sends messages to an AMQP broker.</p>
+
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload
+      <span class="property-type">json | object | primitive</span>
+    </dt>
+    <dd>the payload of the message to send to the AMQP broker. </dd>
+    <dt>routingKey
+      <span class="property-type">string</span>
+    </dt>
+    <dd>
+      If the node's routing key field type is specified as a string, the value of this field will override the node's configured routing key(s). If the node's routing key field type is not specified as a string, this value will have no effect and the value of the typedinput will be used as the routing key.
+    </dd>
+    <dt>properties
+      <span class="property-type">object</span>
+    </dt>
+    <dd>
+      Standard AMQP message properties as specified in <a href="https://www.squaremobius.net/amqp.node/channel_api.html#channel_publish" target="_blank">the amqplib docs</a>. This will shallow merge with whatever is specified in the properties field in the node's configuration.
+      <br />
+      <ul>
+        <li><code>contentType</code>: any | undefined</li>
+        <li><code>contentEncoding</code>: any | undefined</li>
+        <li><code>headers</code>: Object | undefined</li>
+        <li><code>deliveryMode</code>: any | undefined</li>
+        <li><code>priority</code>: any | undefined</li>
+        <li><code>correlationId</code>: any | undefined</li>
+        <li><code>replyTo</code>: any | undefined</li>
+        <li><code>expiration</code>: any | undefined</li>
+        <li><code>messageId</code>: any | undefined</li>
+        <li><code>timestamp</code>: any | undefined</li>
+        <li><code>type</code>: any | undefined</li>
+        <li><code>userId</code>: any | undefined</li>
+        <li><code>appId</code>: any | undefined</li>
+        <li><code>clusterId</code>: any | undefined</li>
+      </ul>
+    </dd>
+  </dl>
+
+  <h3>Payload stringification</h3>
+  <p>By default the payload is run through `JSON.stringify()` before being published. To override this behavior include
+    <code>
+      doNotStringifyPayload: true
+    </code>
+    in the message's properties.headers object
+  </p>
+
+  <h3>References</h3>
+  <ul>
+    <li>This node relies heavily on the <a href="http://www.squaremobius.net/amqp.node/" target="_blank">amqplib</a> library.
+    <li>View the github repo: <a href="https://github.com/MeowWolf/node-red-contrib-mw-amqp" target="_blank">https://github.com/MeowWolf/node-red-contrib-mw-amqp</a>
+  </ul>
+</script>

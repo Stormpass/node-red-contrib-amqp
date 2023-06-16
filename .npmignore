@@ -1,0 +1,2 @@
+build/src/**/*.d.ts
+build/src/**/*.js.map

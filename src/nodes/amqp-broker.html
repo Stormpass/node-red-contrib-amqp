@@ -1,0 +1,109 @@
+<script type="text/javascript">
+  RED.nodes.registerType('amqp-broker', {
+    category: 'config',
+    defaults: {
+      name: { value: '', required: false },
+      host: { value: 'localhost', required: true },
+      port: { value: 5672, required: true, validate: RED.validators.number() },
+      vhost: { value: '' },
+      tls: { value: false },
+      credsFromSettings: { value: false },
+    },
+    credentials: {
+      username: { type: 'text' },
+      password: { type: 'password' },
+    },
+    label: function() {
+      const { name, host, port, vhost } = this
+
+      if (name) {
+        return name
+      }
+
+      const protocol = this.tls ? 'amqps' : 'amqp'
+      return `${protocol}://${host}:${port}/${vhost}`
+    },
+    oneditprepare: function () {
+      $('#node-config-input-credsFromSettings').change(function (e) {
+        if (this.checked) {
+          $('#username-field').hide()
+          $('#password-field').hide()
+        } else {
+          $('#username-field').show()
+          $('#password-field').show()
+        }
+      })
+    }
+  })
+</script>
+
+<script type="text/html" data-template-name="amqp-broker">
+  <h3>Connection</h3>
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i>&nbsp;&nbsp;Name</label>
+    <input type="text" id="node-config-input-name" placeholder="">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-host"><i class="fa fa-globe"></i>&nbsp;&nbsp;Host</label>
+    <input class="input-append-left" type="text" id="node-config-input-host" placeholder="localhost" style="width: 40%">
+    <label for="node-config-input-port" style="margin-left: 10px; width: 35px;">&nbsp;&nbsp;Port</label>
+    <input type="text" id="node-config-input-port" placeholder="AMQP port, defaults to 5672" style="width:45px">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-vhost"><i class="fa fa-user"></i>&nbsp;&nbsp;vhost</label>
+    <input type="text" id="node-config-input-vhost" placeholder="Leave blank for default">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-tls" style="width: 250px;"><i class="fa fa-expeditedssl"></i>&nbsp;&nbsp;Use TLS</label>
+    <input type="checkbox" id="node-config-input-tls" style="margin: 0px 0px 4px; width: 20px;">
+  </div>
+  <hr />
+  <div class="form-row">
+    <label for="node-config-input-credsFromSettings" style="width: 250px;"><i class="fa fa-expeditedssl"></i>&nbsp;&nbsp;Get credentials from settings</label>
+    <input type="checkbox" id="node-config-input-credsFromSettings" style="margin: 0px 0px 4px; width: 20px;">
+  </div>
+  <div class="form-row" id="username-field">
+    <label for="node-config-input-username"><i class="fa fa-user"></i>&nbsp;&nbsp;User</label>
+    <input type="text" id="node-config-input-username">
+  </div>
+  <div class="form-row" id="password-field">
+    <label for="node-config-input-password"><i class="fa fa-lock"></i>&nbsp;&nbsp;Password</label>
+    <input type="password" id="node-config-input-password">
+  </div>
+</script>
+
+
+<script type="text/html" data-help-name="amqp-broker">
+  <h3>Get credentials from settings</h3>
+  <p>
+    If this is checked, variables specified in the settings.js file will be used for the username and password to connect to the broker
+  </p>
+  <p>
+    The field names used for username and password are:
+    <br />
+    <strong>MW_CONTRIB_AMQP_USERNAME</strong> and
+    <br />
+    <strong>MW_CONTRIB_AMQP_PASSWORD</strong> respectively.
+  </p>
+  <p>
+    They can be added to the settings.js file along with the other fields:
+  </p>
+    <pre>
+module.exports = {
+  ...
+  MW_CONTRIB_AMQP_USERNAME: 'rabbitmq',
+  MW_CONTRIB_AMQP_PASSWORD: 'rabbitmq',
+  ...
+}
+    </pre>
+
+  <p>
+    A good setup would be:
+    <ol>
+      <li>Use environment variables with the <em>dotenv</em> npm package to specify your credentials.</li>
+      <li>In the settings file set them as exports like in the above example.</li>
+      <li>Set them to empty strings in the environment like this: `process.env.MW_CONTRIB_AMQP_PASSWORD = ''`.</li>
+    </ol>
+    The last step is very important because environment variables are accessible via the front end and can be accessed by any user.
+  </p>
+</script>
