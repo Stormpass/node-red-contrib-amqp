@@ -16,8 +16,22 @@ module.exports = function (RED: NodeRedApp): void {
     this.status(NODE_STATUS.Disconnected)
     const amqp = new Amqp(RED, this, config)
 
+    let reconnect;
+
+    const inputListener = async (msg, _, done) => {
+      if (msg.payload && msg.payload.reconnectCall && typeof reconnect === 'function') {
+        await reconnect()
+        done && done()
+      } else {
+        done && done()
+      }
+    }
+
+    // receive input reconnectCall
+    this.on('input', inputListener)
+
     ;(async function initializeNode(self): Promise<void> {
-      const reconnect = () =>
+      reconnect = () =>
         new Promise<void>(resolve => {
           reconnectTimeout = setTimeout(async () => {
             try {
@@ -55,10 +69,10 @@ module.exports = function (RED: NodeRedApp): void {
           await reconnect()
         } else if (e.code === ErrorType.InvalidLogin) {
           self.status(NODE_STATUS.Invalid)
-          self.error(`AmqpIn() Could not connect to broker ${e}`)
+          self.error(`AmqpIn() Could not connect to broker ${e}`, { payload: { error: e, source: 'AmqpIn' } })
         } else {
           self.status(NODE_STATUS.Error)
-          self.error(`AmqpIn() ${e}`)
+          self.error(`AmqpIn() ${e}`, { payload: { error: e, source: 'AmqpIn' } })
         }
       }
     })(this)

@@ -71,11 +71,12 @@ export default class Amqp {
     this.connection = await connect(brokerUrl, { heartbeat: 2 })
 
     /* istanbul ignore next */
-    this.connection.on('error', (): void => {
+    this.connection.on('error', (e): void => {
       // If we don't set up this empty event handler
       // node-red crashes with an Unhandled Exception
       // This method allows the exception to be caught
       // by the try/catch blocks in the amqp nodes
+      this.node.error(`Error ${e}`, { payload: { error: e, source: 'Amqp' } })
     })
 
     /* istanbul ignore next */

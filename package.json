@@ -1,7 +1,7 @@
 {
   "name": "@stormpass/node-red-contrib-amqp",
   "license": "ISC",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Better Amqp nodes for node-red",
   "main": "index.js",
   "scripts": {

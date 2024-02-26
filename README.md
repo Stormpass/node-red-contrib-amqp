@@ -6,7 +6,7 @@ This repo fork from @meowwolf/node-red-contrib-amqp
 and
 
 + upgrade amqplib so you can use it with node10+
-+ fixed direct routing publish issues;
++ fixed direct routing publish issues
 
 AMQP nodes for node-red
 
