@@ -34,7 +34,7 @@ module.exports = function (RED: NodeRedApp): void {
 
         // istanbul ignore else
         if (connection) {
-          await amqp.initialize()
+          const channel = await amqp.initialize()
           await amqp.consume()
 
           self.on('input', async (msg, send, done) => {
@@ -73,8 +73,18 @@ module.exports = function (RED: NodeRedApp): void {
             done && done()
           })
 
-          // When the server goes down
+          // When the connection goes down
           connection.on('close', async e => {
+            e && (await reconnect())
+          })
+
+          // When the connection goes down
+          connection.on('error', async e => {
+            e && (await reconnect())
+          })
+
+          // When the channel goes down
+          channel.on('error', async (e) => {
             e && (await reconnect())
           })
 

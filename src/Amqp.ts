@@ -72,24 +72,24 @@ export default class Amqp {
 
     /* istanbul ignore next */
     this.connection.on('error', (e): void => {
-      // If we don't set up this empty event handler
-      // node-red crashes with an Unhandled Exception
-      // This method allows the exception to be caught
-      // by the try/catch blocks in the amqp nodes
-      this.node.error(`Error ${e}`, { payload: { error: e, source: 'Amqp' } })
+      // Set node to disconnected status
+      this.node.status(NODE_STATUS.Disconnected)
+      this.node.error(`AMQP Connection Error ${e}`, { payload: { error: e, source: 'Amqp' } })
     })
 
     /* istanbul ignore next */
     this.connection.on('close', () => {
       this.node.status(NODE_STATUS.Disconnected)
+      this.node.log(`AMQP Connection closed`);
     })
 
     return this.connection
   }
 
-  public async initialize(): Promise<void> {
+  public async initialize(): Promise<Channel> {
     await this.createChannel()
     await this.assertExchange()
+    return this.channel;
   }
 
   public async consume(): Promise<void> {
@@ -297,19 +297,20 @@ export default class Amqp {
     } catch (e) {} // Need to catch here but nothing further is necessary
   }
 
-  private async createChannel(): Promise<void> {
+  private async createChannel(): Promise<Channel> {
     const { prefetch } = this.config
 
     this.channel = await this.connection.createChannel()
     this.channel.prefetch(Number(prefetch))
 
     /* istanbul ignore next */
-    this.channel.on('error', (): void => {
-      // If we don't set up this empty event handler
-      // node-red crashes with an Unhandled Exception
-      // This method allows the exception to be caught
-      // by the try/catch blocks in the amqp nodes
+    this.channel.on('error', (e): void => {
+      // Set node to disconnected status
+      this.node.status(NODE_STATUS.Disconnected)
+      this.node.error(`AMQP Connection Error ${e}`, { payload: { error: e, source: 'Amqp' } })
     })
+
+    return this.channel;
   }
 
   private async assertExchange(): Promise<void> {
