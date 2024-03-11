@@ -5,6 +5,7 @@
     defaults: {
       name: { value: '' },
       broker: { value: '', type: 'amqp-broker' },
+      maxAttempts: { value: 5 },
       exchangeName: { value: '' },
       exchangeType: { value: 'topic' },
       exchangeRoutingKey: { value: '' },
@@ -106,6 +107,10 @@
   <div class="form-row">
     <label for="node-input-broker"><i class="fa fa-globe"></i>&nbsp;&nbsp;Broker</label>
     <input type="text" id="node-input-broker" placeholder="AMQP Broker">
+  </div>
+  <div class="form-row">
+    <label for="node-input-maxAttempts"><i class="fa fa-filter"></i>&nbsp;&nbsp;Max Attempts</label>
+    <input type="text" id="node-input-maxAttempts" placeholder="0 for no maxAttempts restriction">
   </div>
   <hr>
   <h4>Exchange Info</h4>

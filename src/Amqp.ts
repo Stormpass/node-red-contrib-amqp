@@ -37,6 +37,7 @@ export default class Amqp {
       name: config.name,
       broker: config.broker,
       prefetch: config.prefetch,
+      maxAttempts: config.maxAttempts,
       noAck: config.noAck,
       exchange: {
         name: config.exchangeName,

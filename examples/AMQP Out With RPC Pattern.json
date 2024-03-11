@@ -30,6 +30,7 @@
     "name": "Listening for RPC",
     "broker": "3efe01c6.16a3de",
     "prefetch": 0,
+    "maxAttempts": 5,
     "noAck": true,
     "exchangeName": "amq.direct",
     "exchangeType": "direct",
