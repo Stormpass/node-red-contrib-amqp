@@ -6,7 +6,7 @@
       name: { value: '' },
       broker: { value: '', type: 'amqp-broker' },
       prefetch: { value: 0 },
-      maxAttempts: { value: 5 },
+      reconnectOnError: { value: false },
       noAck: { value: true },
       exchangeName: { value: '' },
       exchangeType: { value: 'topic' },
@@ -78,8 +78,9 @@
     <input type="text" id="node-input-prefetch" placeholder="0 for no prefetch restriction">
   </div>
   <div class="form-row">
-    <label for="node-input-maxAttempts"><i class="fa fa-filter"></i>&nbsp;&nbsp;Max Attempts</label>
-    <input type="text" id="node-input-maxAttempts" placeholder="0 for no maxAttempts restriction">
+    <label>&nbsp;&nbsp;</label>
+    <input id="node-input-reconnectOnError" style="width:20px; vertical-align:baseline; margin-right:5px;" type="checkbox">
+    <label for="node-input-reconnectOnError" style="width:auto; margin-top:7px;">reconnectOnError</label>
   </div>
   <div class="form-row">
     <label>&nbsp;</label>
@@ -197,6 +198,11 @@
     </dt>
     <dd>the payload of the message received. </dd>
   </dl>
+
+  <h3>Inputs</h3>
+  <p>
+    <code>msg.payload</code> control amqp-broker reconnect by send {"reconnectCall": true}, 
+  </p>
 
   <h3>Details</h3>
   <p>

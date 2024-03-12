@@ -17,7 +17,7 @@ export interface AmqpConfig {
   name?: string
   broker: string
   prefetch: number
-  maxAttempts?: any
+  reconnectOnError?: boolean
   noAck: boolean
   exchange: {
     name: string
@@ -41,7 +41,7 @@ export interface AmqpInNodeDefaults {
   name?: any
   broker?: any
   prefetch?: any
-  maxAttempts?: any
+  reconnectOnError?: boolean
   noAck?: any
   exchangeName?: any
   exchangeType?: any
@@ -111,4 +111,10 @@ export enum DefaultExchangeName {
   Fanout = 'amq.fanout',
   Topic = 'amq.topic',
   Headers = 'amq.headers',
+}
+
+export enum ErrorLocationEnum {
+  ConnectError = 'ConnectError',
+  ConnectionErrorEvent = 'ConnectionErrorEvent',
+  ChannelErrorEvent = 'ChannelErrorEvent'
 }

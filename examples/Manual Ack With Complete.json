@@ -30,7 +30,7 @@
     "name": "amqp-in-manual-ack",
     "broker": "",
     "prefetch": "0",
-    "maxAttempts": 5,
+    "reconnectOnError": false,
     "exchangeName": "amq.topic",
     "exchangeType": "topic",
     "exchangeRoutingKey": "acked.with.complete",
