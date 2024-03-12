@@ -125,7 +125,7 @@ module.exports = function (RED: NodeRedApp): void {
           })
 
           // When the server goes down
-          connection.once('close', async e => {
+          connection.on('close', async e => {
             e && (await reconnect())
           })
 
