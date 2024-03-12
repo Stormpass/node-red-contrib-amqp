@@ -13,7 +13,7 @@
     "name": "",
     "broker": "",
     "prefetch": "1",
-    "maxAttempts": 5,
+    "reconnectOnError": false,
     "noAck": false,
     "exchangeName": "",
     "exchangeType": "direct",

@@ -37,7 +37,7 @@ export default class Amqp {
       name: config.name,
       broker: config.broker,
       prefetch: config.prefetch,
-      maxAttempts: config.maxAttempts,
+      reconnectOnError: config.reconnectOnError,
       noAck: config.noAck,
       exchange: {
         name: config.exchangeName,
@@ -75,7 +75,6 @@ export default class Amqp {
     this.connection.on('error', (e): void => {
       // Set node to disconnected status
       this.node.status(NODE_STATUS.Disconnected)
-      this.node.error(`AMQP Connection Error ${e}`, { payload: { error: e, source: 'Amqp' } })
     })
 
     /* istanbul ignore next */

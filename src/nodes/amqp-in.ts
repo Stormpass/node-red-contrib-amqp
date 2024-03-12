@@ -1,11 +1,15 @@
 import { NodeRedApp, EditorNodeProperties } from 'node-red'
 import { NODE_STATUS } from '../constants'
-import { AmqpInNodeDefaults, AmqpOutNodeDefaults, ErrorType, NodeType } from '../types'
+import { AmqpInNodeDefaults, AmqpOutNodeDefaults, ErrorType, NodeType, ErrorLocationEnum } from '../types'
 import Amqp from '../Amqp'
 
 module.exports = function (RED: NodeRedApp): void {
   function AmqpIn(config: EditorNodeProperties): void {
     let reconnectTimeout: NodeJS.Timeout
+    let reconnect = null;
+    let connection = null;
+    let channel = null;
+
     RED.events.once('flows:stopped', () => {
       clearTimeout(reconnectTimeout)
     })
@@ -15,14 +19,11 @@ module.exports = function (RED: NodeRedApp): void {
     RED.nodes.createNode(this, config)
     this.status(NODE_STATUS.Disconnected)
 
-    const confgiAmqp: AmqpInNodeDefaults & AmqpOutNodeDefaults = config;
+    const configAmqp: AmqpInNodeDefaults & AmqpOutNodeDefaults = config;
 
-    const amqp = new Amqp(RED, this, confgiAmqp)
+    const amqp = new Amqp(RED, this, configAmqp)
 
-    const maxAttempts = confgiAmqp.maxAttempts;
-    let totalAttempts = 0;
-
-    let reconnect;
+    const reconnectOnError = configAmqp.reconnectOnError;
 
     const inputListener = async (msg, _, done) => {
       if (msg.payload && msg.payload.reconnectCall && typeof reconnect === 'function') {
@@ -35,43 +36,47 @@ module.exports = function (RED: NodeRedApp): void {
 
     // receive input reconnectCall
     this.on('input', inputListener)
+    // When the node is re-deployed
+    this.on('close', async (done: () => void): Promise<void> => {
+      await amqp.close()
+      done && done()
+    })
+    
 
-    ;(async function initializeNode(self): Promise<void> {
-      reconnect = () =>
-        new Promise<void>(resolve => {
-          if(maxAttempts === 0 || totalAttempts < maxAttempts) {
-            reconnectTimeout = setTimeout(async () => {
-              try {
-                await initializeNode(self)
-                resolve()
-              } catch (e) {
-                await reconnect()
-              }
-            }, 2000)
-          } else {
-            self.warn(`Max connection attempts reached (${maxAttempts}). No more connection will be tried.`)
+    async function initializeNode(nodeIns) {
+      reconnect = async () => {
+        // check the channel and clear all the event listener
+        if (channel && channel.removeAllListeners) {
+          channel.removeAllListeners()
+          channel.close();
+          channel = null;
+        }
+
+        // check the connection and clear all the event listener
+        if (connection && connection.removeAllListeners) {
+          connection.removeAllListeners()
+          connection.close();
+          connection = null;
+        }
+
+        // always clear timer before set it;
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(() => {
+          try {
+            initializeNode(nodeIns)
+          } catch (e) {
+            reconnect()
           }
-        })
+        }, 2000)
+      }
 
       try {
-        totalAttempts++;
-        if(maxAttempts === 0) {
-          self.log(`AMQP Connection attempt ${totalAttempts}`);
-        } else {
-          self.log(`AMQP Connection attempt ${totalAttempts} on ${maxAttempts}`);
-        }
-        const connection = await amqp.connect()
+        connection = await amqp.connect()
 
         // istanbul ignore else
         if (connection) {
-          const channel = await amqp.initialize()
+          channel = await amqp.initialize()
           await amqp.consume()
-
-          // When the node is re-deployed
-          self.once('close', async (done: () => void): Promise<void> => {
-            await amqp.close()
-            done && done()
-          })
 
           // When the connection goes down
           connection.on('close', async e => {
@@ -80,28 +85,32 @@ module.exports = function (RED: NodeRedApp): void {
 
           // When the connection goes down
           connection.on('error', async e => {
-            e && (await reconnect())
+            e && reconnectOnError && (await reconnect())
+            nodeIns.error(`Connection error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ConnectionErrorEvent } })
           })
 
           // When the channel goes down
           channel.on('error', async (e) => {
-            e && (await reconnect())
+            e && reconnectOnError && (await reconnect())
+            nodeIns.error(`Channel error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ChannelErrorEvent } })
           })
 
-          self.status(NODE_STATUS.Connected)
+          nodeIns.status(NODE_STATUS.Connected)
         }
       } catch (e) {
-        if (e.code === ErrorType.ConnectionRefused || e.isOperational) {
-          await reconnect()
-        } else if (e.code === ErrorType.InvalidLogin) {
-          self.status(NODE_STATUS.Invalid)
-          self.error(`AmqpIn() Could not connect to broker ${e}`, { payload: { error: e, source: 'AmqpIn' } })
+        reconnectOnError && (await reconnect())
+        if (e.code === ErrorType.InvalidLogin) {
+          nodeIns.status(NODE_STATUS.Invalid)
+          nodeIns.error(`AmqpIn() Could not connect to broker ${e}`, { payload: { error: e, location: ErrorLocationEnum.ConnectError } })
         } else {
-          self.status(NODE_STATUS.Error)
-          self.error(`AmqpIn() ${e}`, { payload: { error: e, source: 'AmqpIn' } })
+          nodeIns.status(NODE_STATUS.Error)
+          nodeIns.error(`AmqpIn() ${e}`, { payload: { error: e, source: 'ConnectionError' } })
         }
       }
-    })(this)
+    }
+
+    // call
+    initializeNode(this);
   }
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore

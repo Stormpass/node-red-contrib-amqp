@@ -7,6 +7,9 @@ and
 
 + upgrade amqplib so you can use it with node10+
 + fixed direct routing publish issues
++ allow reconnect on error
++ manually control node reconnect
++ fixed multi event listener on connection (cause memory leak)
 
 AMQP nodes for node-red
 

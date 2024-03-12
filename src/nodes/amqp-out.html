@@ -5,7 +5,7 @@
     defaults: {
       name: { value: '' },
       broker: { value: '', type: 'amqp-broker' },
-      maxAttempts: { value: 5 },
+      reconnectOnError: { value: false },
       exchangeName: { value: '' },
       exchangeType: { value: 'topic' },
       exchangeRoutingKey: { value: '' },
@@ -109,8 +109,9 @@
     <input type="text" id="node-input-broker" placeholder="AMQP Broker">
   </div>
   <div class="form-row">
-    <label for="node-input-maxAttempts"><i class="fa fa-filter"></i>&nbsp;&nbsp;Max Attempts</label>
-    <input type="text" id="node-input-maxAttempts" placeholder="0 for no maxAttempts restriction">
+    <label>&nbsp;&nbsp;</label>
+    <input id="node-input-reconnectOnError" style="width:20px; vertical-align:baseline; margin-right:5px;" type="checkbox">
+    <label for="node-input-reconnectOnError" style="width:auto; margin-top:7px;">reconnectOnError</label>
   </div>
   <hr>
   <h4>Exchange Info</h4>
