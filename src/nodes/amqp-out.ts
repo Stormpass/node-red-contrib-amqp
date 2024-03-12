@@ -1,6 +1,6 @@
 import { NodeRedApp, EditorNodeProperties } from 'node-red'
 import { NODE_STATUS } from '../constants'
-import { ErrorType, NodeType } from '../types'
+import { AmqpInNodeDefaults, AmqpOutNodeDefaults, ErrorType, NodeType } from '../types'
 import Amqp from '../Amqp'
 import { MessageProperties } from 'amqplib'
 
@@ -21,7 +21,13 @@ module.exports = function (RED: NodeRedApp): void {
     // @ts-ignore
     RED.nodes.createNode(this, config)
     this.status(NODE_STATUS.Disconnected)
-    const amqp = new Amqp(RED, this, config)
+    
+    const confgiAmqp: AmqpInNodeDefaults & AmqpOutNodeDefaults = config;
+
+    const amqp = new Amqp(RED, this, confgiAmqp)
+
+    const maxAttempts = confgiAmqp.maxAttempts;
+    let totalAttempts = 0;
 
     let reconnect;
 
@@ -100,17 +106,27 @@ module.exports = function (RED: NodeRedApp): void {
     ;(async function initializeNode(self): Promise<void> {
       reconnect = () =>
         new Promise<void>(resolve => {
-          reconnectTimeout = setTimeout(async () => {
-            try {
-              await initializeNode(self)
-              resolve()
-            } catch (e) {
-              await reconnect()
-            }
-          }, 2000)
+          if(maxAttempts === 0 || totalAttempts < maxAttempts) {
+            reconnectTimeout = setTimeout(async () => {
+              try {
+                await initializeNode(self)
+                resolve()
+              } catch (e) {
+                await reconnect()
+              }
+            }, 2000)
+          } else {
+            self.warn(`Max connection attempts reached (${maxAttempts}). No more connection will be tried.`)
+          }
         })
 
       try {
+        totalAttempts++;
+        if(maxAttempts === 0) {
+          self.log(`AMQP Connection attempt ${totalAttempts}`);
+        } else {
+          self.log(`AMQP Connection attempt ${totalAttempts} on ${maxAttempts}`);
+        }
         const connection = await amqp.connect()
 
         // istanbul ignore else

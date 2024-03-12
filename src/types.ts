@@ -17,6 +17,7 @@ export interface AmqpConfig {
   name?: string
   broker: string
   prefetch: number
+  maxAttempts?: any
   noAck: boolean
   exchange: {
     name: string
@@ -40,6 +41,7 @@ export interface AmqpInNodeDefaults {
   name?: any
   broker?: any
   prefetch?: any
+  maxAttempts?: any
   noAck?: any
   exchangeName?: any
   exchangeType?: any
