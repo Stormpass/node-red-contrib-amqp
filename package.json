@@ -1,7 +1,7 @@
 {
   "name": "@stormpass/node-red-contrib-amqp",
   "license": "ISC",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Amqp nodes for node-red",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,9 @@
     "lint": "eslint \"src/**\"",
     "test": "npm run build && mocha",
     "test:watch": "mocha -w",
-    "test:cov": "npm run build && nyc mocha"
+    "test:cov": "npm run build && nyc mocha",
+    "login": "npm login --registry https://registry.npmjs.com --auth-type=web",
+    "publish": "npm publish --registry https://registry.npmjs.com"
   },
   "keywords": [
     "node-red",

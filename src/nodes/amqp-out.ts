@@ -42,13 +42,6 @@ module.exports = function (RED: NodeRedApp): void {
         amqpProperties,
       } = config
 
-      // handle reconnect call
-      if (msg.payload && msg.payload.reconnectCall && typeof reconnect === 'function') {
-        await reconnect()
-        done && done()
-        return;
-      }
-
       // message properties override config properties
       let properties: MessageProperties
       try {
@@ -142,7 +135,7 @@ module.exports = function (RED: NodeRedApp): void {
 
         // istanbul ignore else
         if (connection) {
-          await amqp.initialize()
+          channel = await amqp.initialize()
 
           // When the server goes down
           connection.on('close', async e => {
@@ -151,10 +144,21 @@ module.exports = function (RED: NodeRedApp): void {
           
           // When the connection goes down
           connection.on('error', async e => {
-            e && reconnectOnError && (await reconnect())
+            reconnectOnError && (await reconnect())
             nodeIns.error(`Connection error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ConnectionErrorEvent } })
           })
 
+          // When the channel goes down
+          channel.on('close', async () => {
+            await reconnect()
+          })
+
+          // When the channel error occur
+          channel.on('error', async e => {
+            reconnectOnError && (await reconnect())
+            nodeIns.error(`Channel error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ChannelErrorEvent } })
+          })
+          
           nodeIns.status(NODE_STATUS.Connected)
         }
       } catch (e) {

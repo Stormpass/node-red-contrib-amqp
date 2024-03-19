@@ -85,13 +85,18 @@ module.exports = function (RED: NodeRedApp): void {
 
           // When the connection goes down
           connection.on('error', async e => {
-            e && reconnectOnError && (await reconnect())
+            reconnectOnError && (await reconnect())
             nodeIns.error(`Connection error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ConnectionErrorEvent } })
           })
 
           // When the channel goes down
+          channel.on('close', async () => {
+            await reconnect()
+          })
+
+          // When the channel goes down
           channel.on('error', async (e) => {
-            e && reconnectOnError && (await reconnect())
+            reconnectOnError && (await reconnect())
             nodeIns.error(`Channel error ${e}`, { payload: { error: e, location: ErrorLocationEnum.ChannelErrorEvent } })
           })
 
